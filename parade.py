@@ -37,8 +37,6 @@ tier_order_values = {
     "XI": 11,
 }
 
-text_order_values = {"der Stufe": 1, "däer Stufe": 2}
-
 
 def get_ship_type_value(ship_type):
     return ship_type_order_values[ship_type]
@@ -78,7 +76,7 @@ if st.button("Erstellen"):
     result["Typwert"] = result["Typ"].apply(get_ship_type_value)
     result["Stufewert"] = result["Stufe"].apply(get_tier_value)
 
-    sorted_df = result.sort_values(by=["Stufewert", "Typwert"])
+    sorted_df = result.sort_values(by=["Stufewert", "Typwert", "Name"])
     cleaned_df = sorted_df.drop(["Stufewert", "Typwert"], axis=1)
 
     st.subheader("Erfasste sortierte Daten")
