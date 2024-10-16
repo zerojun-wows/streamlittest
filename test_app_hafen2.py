@@ -10,7 +10,6 @@ st.title("Schiffe im Hafen")
 API_KEY = "db1926f579c2fb86bb8f2fad9b6f42e8"
 ACCOUNT_ID = "572142053"
 
-
 # Übersetzungen für Schiffstypen und Nationen
 ship_type_translation = {
     "AirCarrier": "Flugzeugträger",
@@ -22,7 +21,7 @@ ship_type_translation = {
 
 nation_translation = {
     "usa": "USA",
-    "ussr": "UDSSR",
+    "ussr": "UdSSR",
     "japan": "JAPAN",
     "germany": "DEUTSCHLAND",
     "uk": "GROßBRITANNIEN",
@@ -75,7 +74,10 @@ def localize_data(df):
         df["Schiffstyp"].map(ship_type_translation).fillna(df["Schiffstyp"])
     )
     df["Schiffsnation"] = (
-        df["Schiffsnation"].map(nation_translation).fillna(df["Schiffsnation"])
+        df["Schiffsnation"]
+        .str.upper()
+        .map(nation_translation)
+        .fillna(df["Schiffsnation"])
     )
     return df
 
@@ -131,8 +133,12 @@ def display_ships_in_dataframe(ships):
                 is_special = details.get("is_special", False)
 
                 # Preisinformationen (in Kredits oder Gold)
-                price_credit = details.get("price_credit", "Nicht verfügbar")
-                price_gold = details.get("price_gold", "Nicht verfügbar")
+                price_credit = details.get(
+                    "price_credit", None
+                )  # Setze auf None, wenn nicht verfügbar
+                price_gold = details.get(
+                    "price_gold", None
+                )  # Setze auf None, wenn nicht verfügbar
 
             else:
                 ship_name = "Unbekannter Name"
@@ -141,8 +147,8 @@ def display_ships_in_dataframe(ships):
                 nation = "Unbekannte Nation"
                 is_premium = False
                 is_special = False
-                price_credit = "Nicht verfügbar"
-                price_gold = "Nicht verfügbar"
+                price_credit = None  # Setze auf None, wenn nicht verfügbar
+                price_gold = None  # Setze auf None, wenn nicht verfügbar
 
             # Konvertiere die Zeitstempel in ein lesbares Datum
             if last_battle_time:
@@ -183,6 +189,14 @@ def display_ships_in_dataframe(ships):
 
         # Erstelle DataFrame aus der Liste
         df = pd.DataFrame(ship_data)
+
+        # Setze die Datentypen für die Kosten-Spalten auf float
+        df["Kosten (Kredits)"] = df["Kosten (Kredits)"].astype(
+            "float", errors="ignore"
+        )
+        df["Kosten (Dublonen)"] = df["Kosten (Dublonen)"].astype(
+            "float", errors="ignore"
+        )
 
         # Lokalisierung auf den DataFrame anwenden
         df = localize_data(df)
