@@ -160,6 +160,9 @@ def display_ships_in_dataframe(ships):
         # Konvertiere die Liste in einen DataFrame
         df = pd.DataFrame(ship_list)
 
+        # Datentypen der Schiffsstufe korrigieren (nicht-numerische Stufen zu NaN setzen)
+        df["Schiffsstufe"] = pd.to_numeric(df["Schiffsstufe"], errors="coerce")
+
         # Filter hinzufügen
         st.sidebar.header("Filter")
         selected_type = st.sidebar.selectbox(
@@ -169,7 +172,8 @@ def display_ships_in_dataframe(ships):
             "Schiffsnation", ["Alle"] + list(nation_translation.values())
         )
         selected_tier = st.sidebar.selectbox(
-            "Schiffsstufe", ["Alle"] + sorted(df["Schiffsstufe"].unique())
+            "Schiffsstufe",
+            ["Alle"] + sorted(df["Schiffsstufe"].dropna().astype(int).unique()),
         )
         selected_premium = st.sidebar.selectbox(
             "Premiumschiff", ["Alle", "Ja", "Nein"]
@@ -184,7 +188,7 @@ def display_ships_in_dataframe(ships):
         if selected_nation != "Alle":
             df = df[df["Schiffsnation"] == selected_nation]
         if selected_tier != "Alle":
-            df = df[df["Schiffsstufe"] == selected_tier]
+            df = df[df["Schiffsstufe"] == int(selected_tier)]
         if selected_premium != "Alle":
             df = df[df["Premiumschiff"] == selected_premium]
         if selected_special != "Alle":
