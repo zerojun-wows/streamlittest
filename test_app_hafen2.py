@@ -22,7 +22,7 @@ ship_type_translation = {
 
 nation_translation = {
     "usa": "USA",
-    "ussr": "UDSSR",
+    "ussr": "UDSSR",  # Schreibweise geändert
     "japan": "JAPAN",
     "germany": "DEUTSCHLAND",
     "uk": "GROßBRITANNIEN",
@@ -32,8 +32,8 @@ nation_translation = {
     "pan_asia": "PAN-ASIEN",
     "pan_america": "PAN-AMERIKA",
     "commonwealth": "COMMONWEALTH",
-    "netherlands": "DIE NIEDERLANDE",
-    "spain": "SPANIEN",
+    "netherlands": "NIEDERLANDE",  # Fehlende Nation ergänzt
+    "spain": "SPANIEN",  # Fehlende Nation ergänzt
 }
 
 
@@ -70,51 +70,16 @@ def get_ship_details(ship_id):
         return None
 
 
-# Funktion, um die Lokalisierung auf das DataFrame anzuwenden
-def localize_data(df):
-    # Lokalisierung von Schiffstyp und Nation
-    df["Schiffstyp"] = (
-        df["Schiffstyp"].map(ship_type_translation).fillna(df["Schiffstyp"])
-    )
-    df["Schiffsnation"] = (
-        df["Schiffsnation"]
-        .str.lower()
-        .map(nation_translation)
-        .fillna(df["Schiffsnation"])
-    )  # Nationen in Kleinbuchstaben umwandeln
-    return df
-
-
 # Funktion, um die Schiffsdaten in einem Pandas DataFrame zu speichern und anzuzeigen
 def display_ships_in_dataframe(ships):
     if ships:
-        # Erstelle den DataFrame mit den richtigen Spalten direkt
-        columns = [
-            "Schiffs-ID",
-            "Schiffsname",
-            "Schiffstyp",
-            "Schiffsstufe",
-            "Schiffsnation",
-            "Gefechte",
-            "Zurückgelegte Meilen",
-            "Letztes Gefecht",
-            "Zuletzt aktualisiert",
-            "Premiumschiff",
-            "Spezialschiff",
-            "Kosten (Kredits)",
-            "Kosten (Dublonen)",
-        ]
-
-        # DataFrame initialisieren
-        df = pd.DataFrame(columns=columns)
+        # Erstelle eine Liste von Dictionaries, um sie in einen DataFrame zu konvertieren
+        ship_list = []
 
         # Fortschrittsanzeige initialisieren
         progress_bar = st.progress(0)
         status_text = st.empty()
         total_ships = len(ships)
-
-        # Liste für temporäre Daten erstellen
-        ship_data = []
 
         for idx, ship_info in enumerate(ships):
             ship_id = ship_info.get("ship_id", "Unbekannte ID")
@@ -128,30 +93,32 @@ def display_ships_in_dataframe(ships):
             if details:  # Fehlerbehandlung falls 'details' None ist
                 ship_name = details.get("name", "Unbekannter Name")
                 ship_type = details.get("type", "Unbekannter Typ")
-                tier = details.get(
-                    "tier", None
-                )  # Hier wird tier als None gesetzt, falls es unbekannt ist
+                tier = details.get("tier", "Unbekannte Stufe")
                 nation = details.get("nation", "Unbekannte Nation")
                 is_premium = details.get("is_premium", False)
                 is_special = details.get("is_special", False)
 
+                # Übersetze Schiffstyp und Nation
+                ship_type = ship_type_translation.get(
+                    ship_type, "Unbekannter Typ"
+                )
+                nation = nation_translation.get(
+                    nation, "Unbekannte Nation"
+                ).upper()  # Nation in Großbuchstaben
+
                 # Preisinformationen (in Kredits oder Gold)
-                price_credit = details.get(
-                    "price_credit", None
-                )  # Setze auf None, wenn nicht verfügbar
-                price_gold = details.get(
-                    "price_gold", None
-                )  # Setze auf None, wenn nicht verfügbar
+                price_credit = details.get("price_credit", "Nicht verfügbar")
+                price_gold = details.get("price_gold", "Nicht verfügbar")
 
             else:
                 ship_name = "Unbekannter Name"
                 ship_type = "Unbekannter Typ"
-                tier = None  # Setze tier auf None, wenn die Details nicht verfügbar sind
+                tier = "Unbekannte Stufe"
                 nation = "Unbekannte Nation"
                 is_premium = False
                 is_special = False
-                price_credit = None  # Setze auf None, wenn nicht verfügbar
-                price_gold = None  # Setze auf None, wenn nicht verfügbar
+                price_credit = "Nicht verfügbar"
+                price_gold = "Nicht verfügbar"
 
             # Konvertiere die Zeitstempel in ein lesbares Datum
             if last_battle_time:
@@ -164,12 +131,12 @@ def display_ships_in_dataframe(ships):
                 )
 
             # Füge die Schiffsdetails zur Liste hinzu
-            ship_data.append(
+            ship_list.append(
                 {
                     "Schiffs-ID": ship_id,
                     "Schiffsname": ship_name,
                     "Schiffstyp": ship_type,
-                    "Schiffsstufe": tier,  # tier ist jetzt None oder eine gültige Stufe
+                    "Schiffsstufe": tier,
                     "Schiffsnation": nation,
                     "Gefechte": battles,
                     "Zurückgelegte Meilen": distance,
@@ -190,19 +157,38 @@ def display_ships_in_dataframe(ships):
         progress_bar.empty()
         status_text.text("Verarbeitung abgeschlossen, Daten werden geladen...")
 
-        # Erstelle DataFrame aus der Liste
-        df = pd.DataFrame(ship_data)
+        # Konvertiere die Liste in einen DataFrame
+        df = pd.DataFrame(ship_list)
 
-        # Setze die Datentypen für die Kosten-Spalten auf float
-        df["Kosten (Kredits)"] = df["Kosten (Kredits)"].astype(
-            "float", errors="ignore"
+        # Filter hinzufügen
+        st.sidebar.header("Filter")
+        selected_type = st.sidebar.selectbox(
+            "Schiffstyp", ["Alle"] + list(ship_type_translation.values())
         )
-        df["Kosten (Dublonen)"] = df["Kosten (Dublonen)"].astype(
-            "float", errors="ignore"
+        selected_nation = st.sidebar.selectbox(
+            "Schiffsnation", ["Alle"] + list(nation_translation.values())
+        )
+        selected_tier = st.sidebar.selectbox(
+            "Schiffsstufe", ["Alle"] + sorted(df["Schiffsstufe"].unique())
+        )
+        selected_premium = st.sidebar.selectbox(
+            "Premiumschiff", ["Alle", "Ja", "Nein"]
+        )
+        selected_special = st.sidebar.selectbox(
+            "Spezialschiff", ["Alle", "Ja", "Nein"]
         )
 
-        # Lokalisierung auf den DataFrame anwenden
-        df = localize_data(df)
+        # Filter anwenden
+        if selected_type != "Alle":
+            df = df[df["Schiffstyp"] == selected_type]
+        if selected_nation != "Alle":
+            df = df[df["Schiffsnation"] == selected_nation]
+        if selected_tier != "Alle":
+            df = df[df["Schiffsstufe"] == selected_tier]
+        if selected_premium != "Alle":
+            df = df[df["Premiumschiff"] == selected_premium]
+        if selected_special != "Alle":
+            df = df[df["Spezialschiff"] == selected_special]
 
         # DataFrame in Streamlit anzeigen
         st.subheader("Schiffsübersicht:")
