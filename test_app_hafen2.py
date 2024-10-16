@@ -10,6 +10,7 @@ st.title("Schiffe im Hafen")
 API_KEY = "db1926f579c2fb86bb8f2fad9b6f42e8"
 ACCOUNT_ID = "572142053"
 
+
 # Übersetzungen für Schiffstypen und Nationen
 ship_type_translation = {
     "AirCarrier": "Flugzeugträger",
@@ -75,10 +76,10 @@ def localize_data(df):
     )
     df["Schiffsnation"] = (
         df["Schiffsnation"]
-        .str.upper()
+        .str.lower()
         .map(nation_translation)
         .fillna(df["Schiffsnation"])
-    )
+    )  # Nationen in Kleinbuchstaben umwandeln
     return df
 
 
