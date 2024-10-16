@@ -10,6 +10,7 @@ st.title("Schiffe im Hafen")
 API_KEY = "db1926f579c2fb86bb8f2fad9b6f42e8"
 ACCOUNT_ID = "572142053"
 
+
 # Übersetzungen für Schiffstypen und Nationen
 ship_type_translation = {
     "AirCarrier": "Flugzeugträger",
@@ -21,7 +22,7 @@ ship_type_translation = {
 
 nation_translation = {
     "usa": "USA",
-    "ussr": "UdSSR",
+    "ussr": "UDSSR",
     "japan": "JAPAN",
     "germany": "DEUTSCHLAND",
     "uk": "GROßBRITANNIEN",
@@ -74,10 +75,7 @@ def localize_data(df):
         df["Schiffstyp"].map(ship_type_translation).fillna(df["Schiffstyp"])
     )
     df["Schiffsnation"] = (
-        df["Schiffsnation"]
-        .str.upper()
-        .map(nation_translation)
-        .fillna(df["Schiffsnation"])
+        df["Schiffsnation"].map(nation_translation).fillna(df["Schiffsnation"])
     )
     return df
 
@@ -109,6 +107,9 @@ def display_ships_in_dataframe(ships):
         progress_bar = st.progress(0)
         status_text = st.empty()
         total_ships = len(ships)
+
+        # Liste für temporäre Daten erstellen
+        ship_data = []
 
         for idx, ship_info in enumerate(ships):
             ship_id = ship_info.get("ship_id", "Unbekannte ID")
@@ -153,8 +154,8 @@ def display_ships_in_dataframe(ships):
                     "%Y-%m-%d %H:%M:%S"
                 )
 
-            # Füge die Schiffsdetails zum DataFrame hinzu
-            df = df.append(
+            # Füge die Schiffsdetails zur Liste hinzu
+            ship_data.append(
                 {
                     "Schiffs-ID": ship_id,
                     "Schiffsname": ship_name,
@@ -169,8 +170,7 @@ def display_ships_in_dataframe(ships):
                     "Spezialschiff": "Ja" if is_special else "Nein",
                     "Kosten (Kredits)": price_credit,
                     "Kosten (Dublonen)": price_gold,
-                },
-                ignore_index=True,
+                }
             )
 
             # Fortschrittsbalken aktualisieren
@@ -180,6 +180,9 @@ def display_ships_in_dataframe(ships):
         # Fortschrittsanzeige abschließen
         progress_bar.empty()
         status_text.text("Verarbeitung abgeschlossen, Daten werden geladen...")
+
+        # Erstelle DataFrame aus der Liste
+        df = pd.DataFrame(ship_data)
 
         # Lokalisierung auf den DataFrame anwenden
         df = localize_data(df)
