@@ -22,7 +22,7 @@ ship_type_translation = {
 
 nation_translation = {
     "usa": "USA",
-    "ussr": "UdSSR",
+    "ussr": "UDSSR",
     "japan": "JAPAN",
     "germany": "DEUTSCHLAND",
     "uk": "GROßBRITANNIEN",
@@ -32,6 +32,8 @@ nation_translation = {
     "pan_asia": "PAN-ASIEN",
     "pan_america": "PAN-AMERIKA",
     "commonwealth": "COMMONWEALTH",
+    "netherlands": "DIE NIEDERLANDE",
+    "spain": "SPANIEN",
 }
 
 
