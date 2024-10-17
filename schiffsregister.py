@@ -68,12 +68,14 @@ st.title("Schiffsregister")
 def check_csv_structure_and_values(df):
     expected_columns = ["Nation", "Typ", "Klasse", "Stufe", "Name"]
 
-    # Überprüfen, ob die Spalten korrekt sind
-    if list(df.columns) != expected_columns:
-        st.error(
-            f"Fehlerhafte CSV-Struktur! Erwartete Spalten: {', '.join(expected_columns)}"
-        )
+    # Prüfe, ob die erwarteten Spalten in der CSV vorhanden sind
+    missing_columns = [col for col in expected_columns if col not in df.columns]
+    if missing_columns:
+        st.error(f"Fehlende Spalten in der CSV: {', '.join(missing_columns)}")
         return False
+
+    # Extrahiere nur die relevanten Spalten
+    df = df[expected_columns]
 
     # Überprüfen, ob alle Nationen gültig sind
     invalid_nations = df[~df["Nation"].isin(nations_order_dict.keys())]
@@ -107,7 +109,7 @@ def check_csv_structure_and_values(df):
         )
         return False
 
-    return True
+    return True, df
 
 
 # Funktion zum Hochladen einer CSV-Datei und Berechnung der Ordnungswerte
@@ -117,7 +119,8 @@ def upload_csv():
         df = pd.read_csv(uploaded_file)
 
         # Überprüfung der Struktur und der Nationen, Typen, Klassen und Stufen
-        if check_csv_structure_and_values(df):
+        valid, df = check_csv_structure_and_values(df)
+        if valid:
             # Speichere die ursprünglichen Daten
             st.session_state["original_data"] = df.copy()
 
@@ -299,38 +302,3 @@ if st.session_state["schiffsregister"]:
         file_name="schiffsregister.csv",
         mime="text/csv",
     )
-
-    # Anzeige der Unterschiede zwischen der ursprünglichen und der aktuellen Version
-    if not st.session_state[
-        "original_data"
-    ].empty:  # Überprüfen, ob der DataFrame leer ist
-        original_df = st.session_state["original_data"]
-        current_df = pd.DataFrame(st.session_state["schiffsregister"])
-
-        # Vergleiche die beiden DataFrames und finde Unterschiede
-        differences = current_df.merge(
-            original_df,
-            on="Name",
-            suffixes=("_current", "_original"),
-            how="outer",
-            indicator=True,
-        )
-        changes = differences[differences["_merge"] == "both"]
-
-        # Wenn Änderungen vorhanden sind, zeige sie an
-        if not changes.empty:
-            st.subheader("Änderungen im Vergleich zur Originaldatei")
-            for index, row in changes.iterrows():
-                changes_summary = f"Änderung im Eintrag '{row['Name']}': "
-                for column in ["Nation", "Typ", "Klasse", "Stufe"]:
-                    if row[f"{column}_current"] != row[f"{column}_original"]:
-                        changes_summary += f"{column} von '{row[f'{column}_original']}' zu '{row[f'{column}_current']}' geändert. "
-                st.info(changes_summary)
-
-# Option zum Löschen aller Einträge
-if st.button("Alle Einträge löschen"):
-    st.session_state["schiffsregister"] = []
-    st.session_state[
-        "original_data"
-    ] = pd.DataFrame()  # Leeren DataFrame zurücksetzen
-    st.warning("Alle Einträge wurden gelöscht!")
