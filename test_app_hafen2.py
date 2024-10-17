@@ -25,12 +25,12 @@ nation_translation = {
     "ussr": "UDSSR",  # Schreibweise geändert
     "japan": "JAPAN",
     "germany": "DEUTSCHLAND",
-    "uk": "GROßBRITANNIEN",
+    "uk": "GB",
     "france": "FRANKREICH",
     "italy": "ITALIEN",
     "europe": "EUROPA",
-    "pan_asia": "PAN-ASIEN",
-    "pan_america": "PAN-AMERIKA",
+    "pan_asia": "PANASIEN",
+    "pan_america": "PANAMERIKA",
     "commonwealth": "COMMONWEALTH",
     "netherlands": "NIEDERLANDE",  # Fehlende Nation ergänzt
     "spain": "SPANIEN",  # Fehlende Nation ergänzt
