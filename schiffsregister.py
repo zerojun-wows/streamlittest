@@ -74,7 +74,6 @@ if uploaded_file is not None:
 
         # Initialisiere das Schiffsregister in der Session State
         st.session_state["schiffsregister"] = df.to_dict("records")
-        st.session_state["original_data"] = df.copy().to_dict("records")
         st.success("Schiffsregister erfolgreich geladen!")
     else:
         st.error(
@@ -224,20 +223,39 @@ if st.session_state["schiffsregister"]:
             ]
             st.success(f"Eintrag '{name}' erfolgreich aktualisiert!")
 
-            # Nach der Bearbeitung, zeige das aktualisierte DataFrame an
-            df = pd.DataFrame(st.session_state["schiffsregister"])
-            df.sort_values(
-                by=[
-                    "Ordnungswert_Nation",
-                    "Ordnungswert_Stufe",
-                    "Ordnungswert_Klasse",
-                    "Name",
-                ],
-                inplace=True,
+    # Löschfunktion
+    st.subheader("Eintrag löschen")
+    ship_to_delete = st.selectbox(
+        "Schiff zum Löschen auswählen", options=ship_names
+    )
+
+    if st.button("Löschen"):
+        if st.confirm(
+            "Bist du sicher, dass du das Schiff '{}' löschen möchtest?".format(
+                ship_to_delete
             )
-            schiffsbestand_placeholder.dataframe(
-                df
-            )  # Aktualisierte Anzeige des DataFrames
+        ):
+            st.session_state["schiffsregister"] = [
+                ship
+                for ship in st.session_state["schiffsregister"]
+                if ship["Name"] != ship_to_delete
+            ]
+            st.success(f"Eintrag '{ship_to_delete}' erfolgreich gelöscht!")
+
+    # Nach dem Bearbeiten oder Löschen, zeige das aktualisierte DataFrame an
+    df = pd.DataFrame(st.session_state["schiffsregister"])
+    df.sort_values(
+        by=[
+            "Ordnungswert_Nation",
+            "Ordnungswert_Stufe",
+            "Ordnungswert_Klasse",
+            "Name",
+        ],
+        inplace=True,
+    )
+    schiffsbestand_placeholder.dataframe(
+        df
+    )  # Aktualisierte Anzeige des DataFrames
 
 # CSV herunterladen
 csv_data = download_csv()
