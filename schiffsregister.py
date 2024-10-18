@@ -74,6 +74,7 @@ if uploaded_file is not None:
 
         # Initialisiere das Schiffsregister in der Session State
         st.session_state["schiffsregister"] = df.to_dict("records")
+        st.session_state["original_data"] = df.copy().to_dict("records")
         st.success("Schiffsregister erfolgreich geladen!")
     else:
         st.error(
@@ -223,39 +224,43 @@ if st.session_state["schiffsregister"]:
             ]
             st.success(f"Eintrag '{name}' erfolgreich aktualisiert!")
 
+            # Nach der Bearbeitung, zeige das aktualisierte DataFrame an
+            df = pd.DataFrame(st.session_state["schiffsregister"])
+            df.sort_values(
+                by=[
+                    "Ordnungswert_Nation",
+                    "Ordnungswert_Stufe",
+                    "Ordnungswert_Klasse",
+                    "Name",
+                ],
+                inplace=True,
+            )
+            schiffsbestand_placeholder.dataframe(
+                df
+            )  # Aktualisierte Anzeige des DataFrames
+
     # Löschfunktion
     st.subheader("Eintrag löschen")
-    ship_to_delete = st.selectbox(
-        "Schiff zum Löschen auswählen", options=ship_names
+    selected_ship_to_delete = st.selectbox(
+        "Eintrag zum Löschen auswählen", options=ship_names
     )
+    delete_button = st.button("Eintrag löschen")
 
-    if st.button("Löschen"):
-        if st.confirm(
-            "Bist du sicher, dass du das Schiff '{}' löschen möchtest?".format(
-                ship_to_delete
-            )
-        ):
+    if delete_button:
+        confirmation = st.text_input(
+            f"Bitte bestätigen Sie die Löschung von '{selected_ship_to_delete}'. Geben Sie 'löschen' ein:"
+        )
+        if confirmation.lower() == "löschen":
             st.session_state["schiffsregister"] = [
                 ship
                 for ship in st.session_state["schiffsregister"]
-                if ship["Name"] != ship_to_delete
+                if ship["Name"] != selected_ship_to_delete
             ]
-            st.success(f"Eintrag '{ship_to_delete}' erfolgreich gelöscht!")
-
-    # Nach dem Bearbeiten oder Löschen, zeige das aktualisierte DataFrame an
-    df = pd.DataFrame(st.session_state["schiffsregister"])
-    df.sort_values(
-        by=[
-            "Ordnungswert_Nation",
-            "Ordnungswert_Stufe",
-            "Ordnungswert_Klasse",
-            "Name",
-        ],
-        inplace=True,
-    )
-    schiffsbestand_placeholder.dataframe(
-        df
-    )  # Aktualisierte Anzeige des DataFrames
+            st.success(
+                f"Eintrag '{selected_ship_to_delete}' erfolgreich gelöscht!"
+            )
+        else:
+            st.warning("Löschung abgebrochen.")
 
 # CSV herunterladen
 csv_data = download_csv()
