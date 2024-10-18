@@ -18,13 +18,6 @@ nations_order_dict = {
     "SPANIEN": 13,
 }
 
-ship_type_order_dict = {
-    "standard": 1,
-    "elite": 2,
-    "premium": 3,
-    "spezial": 4,
-}
-
 ship_class_order_dict = {
     "U-Boot": 1,
     "Zerstörer": 2,
@@ -46,6 +39,13 @@ ship_tier_order_dict = {
     "X": 10,
     "XI": 11,
 }
+
+ship_type_options = [
+    "standard",
+    "elite",
+    "premium",
+    "spezial",
+]  # Liste der Schiffstypen
 
 
 # Hilfsfunktion zum CSV-Download
@@ -69,139 +69,181 @@ if uploaded_file is not None:
 
         # Berechne die Ordnungswerte
         df["Ordnungswert_Nation"] = df["Nation"].map(nations_order_dict)
-        df["Ordnungswert_Typ"] = df["Typ"].map(ship_type_order_dict)
         df["Ordnungswert_Klasse"] = df["Klasse"].map(ship_class_order_dict)
         df["Ordnungswert_Stufe"] = df["Stufe"].map(ship_tier_order_dict)
 
         # Initialisiere das Schiffsregister in der Session State
         st.session_state["schiffsregister"] = df.to_dict("records")
+        st.session_state["original_data"] = df.copy().to_dict("records")
         st.success("Schiffsregister erfolgreich geladen!")
     else:
         st.error(
             "Die hochgeladene CSV-Datei enthält nicht alle erforderlichen Spalten: Nation, Typ, Klasse, Stufe, Name."
         )
 
-# Wenn ein Schiffsregister in der Session State existiert
-if "schiffsregister" in st.session_state:
-    # Anzeige des aktuellen Schiffsbestands sortiert nach Ordnungswerten und Namen
-    if st.session_state["schiffsregister"]:
-        st.subheader("Aktueller Schiffsbestand (sortiert)")
-        df = pd.DataFrame(st.session_state["schiffsregister"])
+# Wenn kein Schiffsregister existiert, initialisiere eine leere Liste
+if "schiffsregister" not in st.session_state:
+    st.session_state["schiffsregister"] = []
 
-        # Sortiere das DataFrame nach den Ordnungswerten und dem Namen
-        df.sort_values(
-            by=[
-                "Ordnungswert_Nation",
-                "Ordnungswert_Typ",
-                "Ordnungswert_Klasse",
-                "Ordnungswert_Stufe",
-                "Name",
-            ],
-            inplace=True,
+# Formular zum Hinzufügen eines neuen Schiffs
+st.subheader("Neues Schiff hinzufügen")
+with st.form(key="new_ship"):
+    col1, col2 = st.columns(2)
+
+    with col1:
+        new_nation = st.selectbox(
+            "Nation", options=list(nations_order_dict.keys())
         )
-        st.dataframe(df)
+        new_typ = st.selectbox("Typ", options=ship_type_options)
 
-        # Auswahl für das Bearbeiten eines Eintrags über den Schiffsnamen
-        ship_names = [
-            ship["Name"] for ship in st.session_state["schiffsregister"]
-        ]
-        selected_ship_name = st.selectbox(
-            "Eintrag zum Bearbeiten auswählen", options=ship_names
+    with col2:
+        new_klasse = st.selectbox(
+            "Klasse", options=list(ship_class_order_dict.keys())
+        )
+        new_stufe = st.selectbox(
+            "Stufe", options=list(ship_tier_order_dict.keys())
+        )
+        new_name = st.text_input("Name")
+
+    submit_new_ship_button = st.form_submit_button(
+        label="Neues Schiff hinzufügen"
+    )
+
+if submit_new_ship_button:
+    # Berechne die Ordnungswerte für das neue Schiff
+    new_ordnungswert_nation = nations_order_dict[new_nation]
+    new_ordnungswert_klasse = ship_class_order_dict[new_klasse]
+    new_ordnungswert_stufe = ship_tier_order_dict[new_stufe]
+
+    new_ship = {
+        "Nation": new_nation,
+        "Typ": new_typ,
+        "Klasse": new_klasse,
+        "Stufe": new_stufe,
+        "Name": new_name,
+        "Ordnungswert_Nation": new_ordnungswert_nation,
+        "Ordnungswert_Klasse": new_ordnungswert_klasse,
+        "Ordnungswert_Stufe": new_ordnungswert_stufe,
+    }
+
+    # Füge das neue Schiff dem Register hinzu
+    st.session_state["schiffsregister"].append(new_ship)
+    st.success(f"Neues Schiff '{new_name}' erfolgreich hinzugefügt!")
+
+# Anzeige des aktuellen Schiffsbestands sortiert nach Ordnungswerten und Namen
+if st.session_state["schiffsregister"]:
+    st.subheader("Aktueller Schiffsbestand (sortiert)")
+    df = pd.DataFrame(st.session_state["schiffsregister"])
+
+    # Sortiere das DataFrame nach den neuen Ordnungswerten und Namen
+    df.sort_values(
+        by=[
+            "Ordnungswert_Nation",
+            "Ordnungswert_Stufe",
+            "Ordnungswert_Klasse",
+            "Name",
+        ],
+        inplace=True,
+    )
+    schiffsbestand_placeholder = st.empty()  # Platzhalter für DataFrame
+    schiffsbestand_placeholder.dataframe(df)  # Initiale Anzeige des DataFrames
+
+    # Auswahl für das Bearbeiten eines Eintrags über den Schiffsnamen
+    ship_names = [ship["Name"] for ship in st.session_state["schiffsregister"]]
+    selected_ship_name = st.selectbox(
+        "Eintrag zum Bearbeiten auswählen", options=ship_names
+    )
+
+    if selected_ship_name:
+        # Finde das Schiff, das bearbeitet werden soll
+        edit_ship = next(
+            ship
+            for ship in st.session_state["schiffsregister"]
+            if ship["Name"] == selected_ship_name
         )
 
-        if st.button("Eintrag bearbeiten"):
-            # Finde das Schiff, das bearbeitet werden soll
-            edit_ship = next(
-                ship
-                for ship in st.session_state["schiffsregister"]
-                if ship["Name"] == selected_ship_name
+        with st.form(key="edit_ship"):
+            col1, col2 = st.columns(2)
+
+            with col1:
+                nation = st.selectbox(
+                    "Nation",
+                    options=list(nations_order_dict.keys()),
+                    index=list(nations_order_dict.keys()).index(
+                        edit_ship["Nation"]
+                    ),
+                )
+                typ = st.selectbox(
+                    "Typ",
+                    options=ship_type_options,
+                    index=ship_type_options.index(edit_ship["Typ"]),
+                )
+
+            with col2:
+                klasse = st.selectbox(
+                    "Klasse",
+                    options=list(ship_class_order_dict.keys()),
+                    index=list(ship_class_order_dict.keys()).index(
+                        edit_ship["Klasse"]
+                    ),
+                )
+                stufe = st.selectbox(
+                    "Stufe",
+                    options=list(ship_tier_order_dict.keys()),
+                    index=list(ship_tier_order_dict.keys()).index(
+                        edit_ship["Stufe"]
+                    ),
+                )
+                name = st.text_input("Name", value=edit_ship["Name"])
+
+            # Berechne die Ordnungswerte
+            ordnungswert_nation = nations_order_dict[nation]
+            ordnungswert_klasse = ship_class_order_dict[klasse]
+            ordnungswert_stufe = ship_tier_order_dict[stufe]
+
+            # Einreichungsbutton für das Formular
+            submit_edit_button = st.form_submit_button(
+                label="Änderungen speichern"
             )
 
-            with st.form(key="edit_ship"):
-                col1, col2 = st.columns(2)
+        if submit_edit_button:
+            updated_ship = {
+                "Nation": nation,
+                "Typ": typ,
+                "Klasse": klasse,
+                "Stufe": stufe,
+                "Name": name,
+                "Ordnungswert_Nation": ordnungswert_nation,
+                "Ordnungswert_Klasse": ordnungswert_klasse,
+                "Ordnungswert_Stufe": ordnungswert_stufe,
+            }
+            # Aktualisiere den Eintrag in der Liste
+            st.session_state["schiffsregister"] = [
+                updated_ship if ship["Name"] == selected_ship_name else ship
+                for ship in st.session_state["schiffsregister"]
+            ]
+            st.success(f"Eintrag '{name}' erfolgreich aktualisiert!")
 
-                with col1:
-                    nation = st.selectbox(
-                        "Nation",
-                        options=list(nations_order_dict.keys()),
-                        index=list(nations_order_dict.keys()).index(
-                            edit_ship["Nation"]
-                        ),
-                    )
-                    schiff_typ = st.selectbox(
-                        "Typ",
-                        options=list(ship_type_order_dict.keys()),
-                        index=list(ship_type_order_dict.keys()).index(
-                            edit_ship["Typ"]
-                        ),
-                    )
-                    klasse = st.selectbox(
-                        "Klasse",
-                        options=list(ship_class_order_dict.keys()),
-                        index=list(ship_class_order_dict.keys()).index(
-                            edit_ship["Klasse"]
-                        ),
-                    )
+            # Nach der Bearbeitung, zeige das aktualisierte DataFrame an
+            df = pd.DataFrame(st.session_state["schiffsregister"])
+            df.sort_values(
+                by=[
+                    "Ordnungswert_Nation",
+                    "Ordnungswert_Stufe",
+                    "Ordnungswert_Klasse",
+                    "Name",
+                ],
+                inplace=True,
+            )
+            schiffsbestand_placeholder.dataframe(
+                df
+            )  # Aktualisierte Anzeige des DataFrames
 
-                with col2:
-                    stufe = st.selectbox(
-                        "Stufe",
-                        options=list(ship_tier_order_dict.keys()),
-                        index=list(ship_tier_order_dict.keys()).index(
-                            edit_ship["Stufe"]
-                        ),
-                    )
-                    name = st.text_input("Name", value=edit_ship["Name"])
-
-                # Berechne die Ordnungswerte
-                ordnungswert_nation = nations_order_dict[nation]
-                ordnungswert_typ = ship_type_order_dict[schiff_typ]
-                ordnungswert_klasse = ship_class_order_dict[klasse]
-                ordnungswert_stufe = ship_tier_order_dict[stufe]
-
-                # Einreichungsbutton für das Formular
-                submit_edit_button = st.form_submit_button(
-                    label="Änderungen speichern"
-                )
-
-            if submit_edit_button:
-                updated_ship = {
-                    "Nation": nation,
-                    "Typ": schiff_typ,
-                    "Klasse": klasse,
-                    "Stufe": stufe,
-                    "Name": name,
-                    "Ordnungswert_Nation": ordnungswert_nation,
-                    "Ordnungswert_Typ": ordnungswert_typ,
-                    "Ordnungswert_Klasse": ordnungswert_klasse,
-                    "Ordnungswert_Stufe": ordnungswert_stufe,
-                }
-                # Aktualisiere den Eintrag in der Liste
-                st.session_state["schiffsregister"] = [
-                    updated_ship if ship["Name"] == selected_ship_name else ship
-                    for ship in st.session_state["schiffsregister"]
-                ]
-                st.success(f"Eintrag '{name}' erfolgreich aktualisiert!")
-
-                # Nach der Bearbeitung, zeige das aktualisierte DataFrame an
-                df = pd.DataFrame(st.session_state["schiffsregister"])
-                df.sort_values(
-                    by=[
-                        "Ordnungswert_Nation",
-                        "Ordnungswert_Typ",
-                        "Ordnungswert_Klasse",
-                        "Ordnungswert_Stufe",
-                        "Name",
-                    ],
-                    inplace=True,
-                )
-                st.dataframe(df)
-
-    # CSV herunterladen
-    csv_data = download_csv()
-    st.download_button(
-        label="Schiffsregister herunterladen",
-        data=csv_data,
-        file_name="schiffsregister.csv",
-        mime="text/csv",
-    )
+# CSV herunterladen
+csv_data = download_csv()
+st.download_button(
+    label="Schiffsregister herunterladen",
+    data=csv_data,
+    file_name="schiffsregister.csv",
+    mime="text/csv",
+)
