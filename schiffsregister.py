@@ -251,12 +251,19 @@ if st.session_state["schiffsregister"]:
             f"Bitte bestätigen Sie die Löschung von '{selected_ship_to_delete}'. Geben Sie 'löschen' ein:"
         )
         if confirmation.lower() == "löschen":
-            # Aktualisiere das Schiffsregister nach dem Löschen
+            # Debugging: Vor der Löschung, zeige den aktuellen Zustand an
+            st.write(f"Vor dem Löschen: {st.session_state['schiffsregister']}")
+
+            # Lösche das ausgewählte Schiff
             st.session_state["schiffsregister"] = [
                 ship
                 for ship in st.session_state["schiffsregister"]
                 if ship["Name"] != selected_ship_to_delete
             ]
+
+            # Debugging: Nach der Löschung, zeige den Zustand erneut an
+            st.write(f"Nach dem Löschen: {st.session_state['schiffsregister']}")
+
             st.success(
                 f"Eintrag '{selected_ship_to_delete}' erfolgreich gelöscht!"
             )
@@ -272,7 +279,9 @@ if st.session_state["schiffsregister"]:
                 ],
                 inplace=True,
             )
-            schiffsbestand_placeholder.dataframe(df)
+            schiffsbestand_placeholder.dataframe(
+                df
+            )  # Aktualisierte Anzeige des DataFrames
         else:
             st.warning("Löschung abgebrochen.")
 
