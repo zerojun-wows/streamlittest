@@ -261,7 +261,7 @@ if st.session_state["schiffsregister"]:
                 f"Eintrag '{selected_ship_to_delete}' erfolgreich gelöscht!"
             )
 
-            # Nach dem Löschen, aktualisiere den DataFrame und die Anzeige
+            # Zeige den aktualisierten DataFrame an
             df = pd.DataFrame(st.session_state["schiffsregister"])
             df.sort_values(
                 by=[
@@ -272,9 +272,7 @@ if st.session_state["schiffsregister"]:
                 ],
                 inplace=True,
             )
-            schiffsbestand_placeholder.dataframe(
-                df
-            )  # Aktualisierte Anzeige des DataFrames
+            schiffsbestand_placeholder.dataframe(df)
         else:
             st.warning("Löschung abgebrochen.")
 
