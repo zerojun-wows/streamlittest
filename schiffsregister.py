@@ -251,6 +251,7 @@ if st.session_state["schiffsregister"]:
             f"Bitte bestätigen Sie die Löschung von '{selected_ship_to_delete}'. Geben Sie 'löschen' ein:"
         )
         if confirmation.lower() == "löschen":
+            # Aktualisiere das Schiffsregister nach dem Löschen
             st.session_state["schiffsregister"] = [
                 ship
                 for ship in st.session_state["schiffsregister"]
@@ -260,7 +261,7 @@ if st.session_state["schiffsregister"]:
                 f"Eintrag '{selected_ship_to_delete}' erfolgreich gelöscht!"
             )
 
-            # Nach dem Löschen, zeige das aktualisierte DataFrame an
+            # Nach dem Löschen, aktualisiere den DataFrame und die Anzeige
             df = pd.DataFrame(st.session_state["schiffsregister"])
             df.sort_values(
                 by=[
