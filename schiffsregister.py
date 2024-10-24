@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-# Dictionaries für die Ordnungswerte
+# Dictionaries für die Ordnungswerte (behalten wie in deiner ursprünglichen Version)
 nations_order_dict = {
     "JAPAN": 1,
     "USA": 2,
@@ -84,51 +84,6 @@ if uploaded_file is not None:
 # Wenn kein Schiffsregister existiert, initialisiere eine leere Liste
 if "schiffsregister" not in st.session_state:
     st.session_state["schiffsregister"] = []
-
-# Formular zum Hinzufügen eines neuen Schiffs
-st.subheader("Neues Schiff hinzufügen")
-with st.form(key="new_ship"):
-    col1, col2 = st.columns(2)
-
-    with col1:
-        new_nation = st.selectbox(
-            "Nation", options=list(nations_order_dict.keys())
-        )
-        new_typ = st.selectbox("Typ", options=ship_type_options)
-
-    with col2:
-        new_klasse = st.selectbox(
-            "Klasse", options=list(ship_class_order_dict.keys())
-        )
-        new_stufe = st.selectbox(
-            "Stufe", options=list(ship_tier_order_dict.keys())
-        )
-        new_name = st.text_input("Name")
-
-    submit_new_ship_button = st.form_submit_button(
-        label="Neues Schiff hinzufügen"
-    )
-
-if submit_new_ship_button:
-    # Berechne die Ordnungswerte für das neue Schiff
-    new_ordnungswert_nation = nations_order_dict[new_nation]
-    new_ordnungswert_klasse = ship_class_order_dict[new_klasse]
-    new_ordnungswert_stufe = ship_tier_order_dict[new_stufe]
-
-    new_ship = {
-        "Nation": new_nation,
-        "Typ": new_typ,
-        "Klasse": new_klasse,
-        "Stufe": new_stufe,
-        "Name": new_name,
-        "Ordnungswert_Nation": new_ordnungswert_nation,
-        "Ordnungswert_Klasse": new_ordnungswert_klasse,
-        "Ordnungswert_Stufe": new_ordnungswert_stufe,
-    }
-
-    # Füge das neue Schiff dem Register hinzu
-    st.session_state["schiffsregister"].append(new_ship)
-    st.success(f"Neues Schiff '{new_name}' erfolgreich hinzugefügt!")
 
 # Anzeige des aktuellen Schiffsbestands sortiert nach Ordnungswerten und Namen
 if st.session_state["schiffsregister"]:
@@ -239,20 +194,24 @@ if st.session_state["schiffsregister"]:
                 df
             )  # Aktualisierte Anzeige des DataFrames
 
-    # Löschfunktion
+# Löschfunktion (nur wenn mehr als ein Eintrag vorhanden ist)
+if len(st.session_state["schiffsregister"]) > 1:
     st.subheader("Eintrag löschen")
     selected_ship_to_delete = st.selectbox(
         "Eintrag zum Löschen auswählen", options=ship_names
     )
-    delete_button = st.button("Eintrag löschen")
 
-    if delete_button:
-        confirmation = st.text_input(
-            f"Bitte bestätigen Sie die Löschung von '{selected_ship_to_delete}'. Geben Sie 'löschen' ein:"
-        )
-        if confirmation.lower() == "löschen":
-            # Debugging: Vor der Löschung, zeige den aktuellen Zustand an
-            st.write(f"Vor dem Löschen: {st.session_state['schiffsregister']}")
+    # Füge ein Textfeld zur Bestätigung der Löschung hinzu
+    confirmation = st.text_input(
+        f"Bitte bestätigen Sie die Löschung von '{selected_ship_to_delete}'. Geben Sie 'löschen' ein:"
+    )
+
+    if confirmation.lower() == "löschen":
+        delete_button = st.button("Eintrag löschen")
+
+        if delete_button:
+            # Debugging Ausgabe vor der Löschung
+            st.write(f"Lösche {selected_ship_to_delete}")
 
             # Lösche das ausgewählte Schiff
             st.session_state["schiffsregister"] = [
@@ -260,15 +219,11 @@ if st.session_state["schiffsregister"]:
                 for ship in st.session_state["schiffsregister"]
                 if ship["Name"] != selected_ship_to_delete
             ]
-
-            # Debugging: Nach der Löschung, zeige den Zustand erneut an
-            st.write(f"Nach dem Löschen: {st.session_state['schiffsregister']}")
-
             st.success(
                 f"Eintrag '{selected_ship_to_delete}' erfolgreich gelöscht!"
             )
 
-            # Zeige den aktualisierten DataFrame an
+            # Nach der Löschung, aktualisiere die Anzeige
             df = pd.DataFrame(st.session_state["schiffsregister"])
             df.sort_values(
                 by=[
@@ -282,8 +237,10 @@ if st.session_state["schiffsregister"]:
             schiffsbestand_placeholder.dataframe(
                 df
             )  # Aktualisierte Anzeige des DataFrames
-        else:
-            st.warning("Löschung abgebrochen.")
+else:
+    st.warning(
+        "Das Schiffsregister enthält nur einen Eintrag. Löschen ist nicht möglich."
+    )
 
 # CSV herunterladen
 csv_data = download_csv()
@@ -293,3 +250,14 @@ st.download_button(
     file_name="schiffsregister.csv",
     mime="text/csv",
 )
+
+# Funktion zum Zurücksetzen der Anwendung
+if st.button("Anwendung zurücksetzen"):
+    st.session_state["schiffsregister"] = []  # Leere das Schiffsregister
+    st.session_state[
+        "original_data"
+    ] = []  # Setze die Originaldaten ebenfalls zurück
+
+    st.success(
+        "Die Anwendung wurde zurückgesetzt. Ein leeres Schiffsregister wurde erstellt."
+    )
