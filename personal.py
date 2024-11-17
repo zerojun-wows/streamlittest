@@ -63,20 +63,18 @@ if uploaded_file is not None:
         df, key="my_key", column_config=config, num_rows="dynamic"
     )
 
-    #    st.write(st.session_state["my_key"])
-
     if st.button("Get results"):
         result["Nationenwert"] = result["Nation"].apply(set_nationenwert)
         result["Gesamtwert"] = result.apply(
             lambda x: x["Nationenwert"] + x["Stufe(0-21)"], axis=1
         )
-
+        st.subheader("Daten inklusive Berechnungen")
         st.write(result)
 
         st.subheader("Daten Zusammenfassung")
         st.write(result.describe())
 
-        st.subheader("Personal Datei")
+        st.subheader("Personal Datei speichern")
         csv = convert_df(result)
 
         st.download_button(

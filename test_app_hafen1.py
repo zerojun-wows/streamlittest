@@ -25,6 +25,25 @@ def get_ship_data():
         return None
 
 
+# Funktion, um die Schiffsdetails aus der API abzurufen
+def get_ship_details(ship_id):
+    url = f"https://api.worldofwarships.eu/wows/encyclopedia/ships/?application_id={API_KEY}&ship_id={ship_id}&language=de"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json().get("data", {})
+        if data:
+            return data.get(str(ship_id), {})
+        else:
+            st.warning(f"Keine Details für Schiff {ship_id} gefunden.")
+            return None
+    else:
+        st.error(
+            f"Fehler beim Abrufen der Schiffsdetails für Schiff {ship_id}: {response.status_code}"
+        )
+        return None
+
+
 # Funktion, um die Schiffsdaten in einem Pandas DataFrame zu speichern und anzuzeigen
 def display_ships_in_dataframe(ships):
     if ships:
@@ -36,6 +55,30 @@ def display_ships_in_dataframe(ships):
             distance = ship_info.get("distance", 0)
             last_battle_time = ship_info.get("last_battle_time", None)
             updated_at = ship_info.get("updated_at", None)
+
+            # Abrufen der Schiffsdetails (Name, Typ, Stufe, Nation, Preis)
+            details = get_ship_details(ship_id)
+            if details:  # Fehlerbehandlung falls 'details' None ist
+                ship_name = details.get("name", "Unbekannter Name")
+                ship_type = details.get("type", "Unbekannter Typ")
+                tier = details.get("tier", "Unbekannte Stufe")
+                nation = details.get("nation", "Unbekannte Nation")
+                is_premium = details.get("is_premium", False)
+                is_special = details.get("is_special", False)
+
+                # Preisinformationen (in Kredits oder Gold)
+                price_credit = details.get("price_credit", "Nicht verfügbar")
+                price_gold = details.get("price_gold", "Nicht verfügbar")
+
+            else:
+                ship_name = "Unbekannter Name"
+                ship_type = "Unbekannter Typ"
+                tier = "Unbekannte Stufe"
+                nation = "Unbekannte Nation"
+                is_premium = False
+                is_special = False
+                price_credit = "Nicht verfügbar"
+                price_gold = "Nicht verfügbar"
 
             # Konvertiere die Zeitstempel in ein lesbares Datum
             if last_battle_time:
@@ -51,10 +94,18 @@ def display_ships_in_dataframe(ships):
             ship_list.append(
                 {
                     "Schiffs-ID": ship_id,
+                    "Schiffsname": ship_name,
+                    "Schiffstyp": ship_type,
+                    "Schiffsstufe": tier,
+                    "Schiffsnation": nation,
                     "Gefechte": battles,
                     "Zurückgelegte Meilen": distance,
                     "Letztes Gefecht": last_battle_time,
                     "Zuletzt aktualisiert": updated_at,
+                    "Premiumschiff": "Ja" if is_premium else "Nein",
+                    "Spezialschiff": "Ja" if is_special else "Nein",
+                    "Kosten (Kredits)": price_credit,
+                    "Kosten (Dublonen)": price_gold,
                 }
             )
 
